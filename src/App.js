@@ -58,18 +58,49 @@ function App() {
       }
       setSaveMessage('Data berhasil disimpan');
 
-      // Redirect setelah 5 detik
+      // Redirect setelah 1 detik
       setTimeout(() => {
         window.location = document.referrer;
       }, 1000);
     }
   };
 
+  const checkIdMovie = (id) => {
+    const storedSavedMovies = JSON.parse(localStorage.getItem('savedMovies')) || [];
+
+    // Periksa apakah film sudah ada dalam daftar
+    return storedSavedMovies.some(movie => movie.id === selectedMovie.id);
+
+  }
+
   const handleMyFavoriteClick = () => {
     setIsFavoriteMode(!isFavoriteMode);
     const getSaveMovie = JSON.parse(localStorage.getItem('savedMovies'));
     if (getSaveMovie) {
       setMovie(getSaveMovie);
+    }
+  };
+
+  const handleRemoveFromSaved = (movieId) => {
+    // Ambil data film yang sudah disimpan dari localStorage
+    const storedSavedMovies = JSON.parse(localStorage.getItem('savedMovies')) || [];
+
+    // Periksa apakah film dengan ID tertentu sudah ada dalam daftar
+    const isMovieAlreadySaved = storedSavedMovies.some(movie => movie.id === movieId);
+
+    if (isMovieAlreadySaved) {
+      // Jika ada, hapus film dari daftar
+      const updatedSavedMovies = storedSavedMovies.filter(movie => movie.id !== movieId);
+
+      // Simpan data ke localStorage
+      localStorage.setItem('savedMovies', JSON.stringify(updatedSavedMovies));
+
+
+      // Redirect setelah 3 detik
+      setTimeout(() => {
+        setSaveMessage('Data berhasil dihapus');
+        window.location = document.referrer;
+      }, 3000);
     }
   };
 
@@ -186,9 +217,12 @@ function App() {
 
     setShowForm(true);
   }
-
+  const refresh = async () => {
+    window.location.href = '/';
+  }
   const refreshPage = async () => {
     localStorage.setItem('movieRatings', JSON.stringify(movieRatings));
+    //localStorage.setItem('savedMovies', JSON.stringify(savedMovies));
     window.location = document.referrer;
   };
 
@@ -221,8 +255,13 @@ function App() {
                     ))}
                   </div>
                 </div>
-                <button className='button-5' onClick={refreshPage}>Kembali</button>
-                <button className='button-4' onClick={handleAddToSaved}>Tambah</button>
+                <button className='button-5' onClick={refresh}>Kembali</button>
+                {!isFavoriteMode && (
+                  <button className='button-4' onClick={handleAddToSaved}>Tambah</button>
+                )}
+                {isFavoriteMode && (
+                  <button className='button-3' onClick={handleRemoveFromSaved(selectedMovie.id)}>Hapus My Favorite</button>
+                )}
                 {saveMessage && <p>{saveMessage}</p>}
                 {comments.length > 0 && (
                   <button className="open-modal-button modal-button" onClick={handleOpenModal}>
