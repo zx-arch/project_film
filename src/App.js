@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
 import ReactPaginate from 'react-paginate';
+import Searching from './components/Searching';
+import Filter from './components/Filter';
 
 const Modal = ({ isOpen, onClose, children }) => {
   if (!isOpen) {
@@ -31,6 +33,65 @@ function App() {
   const [name, setName] = useState('');
   const [showForm, setShowForm] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedStars, setSelectedStars] = useState([]);
+  const [movieRatings, setMovieRatings] = useState({});
+  const [savedMovies, setSavedMovies] = useState([]);
+  const [isFavoriteMode, setIsFavoriteMode] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  const handleAddToSaved = () => {
+    if (selectedMovie) {
+      // Ambil data film yang sudah disimpan dari localStorage
+      const storedSavedMovies = JSON.parse(localStorage.getItem('savedMovies')) || [];
+
+      // Periksa apakah film sudah ada dalam daftar
+      const isMovieAlreadySaved = storedSavedMovies.some(movie => movie.id === selectedMovie.id);
+
+      if (!isMovieAlreadySaved) {
+        // Jika belum ada, tambahkan film ke daftar
+        const updatedSavedMovies = [...storedSavedMovies, selectedMovie];
+        setSavedMovies(updatedSavedMovies);
+
+        // Simpan data ke localStorage
+        localStorage.setItem('savedMovies', JSON.stringify(updatedSavedMovies));
+
+      }
+      setSaveMessage('Data berhasil disimpan');
+
+      // Redirect setelah 5 detik
+      setTimeout(() => {
+        window.location = document.referrer;
+      }, 1000);
+    }
+  };
+
+  const handleMyFavoriteClick = () => {
+    setIsFavoriteMode(!isFavoriteMode);
+    const getSaveMovie = JSON.parse(localStorage.getItem('savedMovies'));
+    if (getSaveMovie) {
+      setMovie(getSaveMovie);
+    }
+  };
+
+  const handleStarClick = (index) => {
+    // Lakukan sesuatu ketika bintang diklik
+    if (!selectedMovie) return;
+
+    const movieId = selectedMovie.id;
+    const isSelected = movieRatings[movieId]?.includes(index);
+
+    setMovieRatings((prevRatings) => {
+      const prevMovieRatings = prevRatings[movieId] || [];
+      const updatedRatings = isSelected
+        ? prevMovieRatings.filter((rating) => rating !== index)
+        : [...prevMovieRatings, index];
+
+      return { ...prevRatings, [movieId]: updatedRatings };
+    });
+
+    // Simpan data ke localStorage
+    localStorage.setItem('selectedStars', JSON.stringify(selectedStars));
+  };
 
   const fetchMovie = async () => {
     console.log(movie);
@@ -39,8 +100,23 @@ function App() {
       .then(json => setMovie(json.results))
   }
   useEffect(() => {
-    fetchMovie()
-  }, [])
+    fetchMovie();
+    const storedRatings = JSON.parse(localStorage.getItem('movieRatings'));
+    if (storedRatings) {
+      setMovieRatings(storedRatings);
+    }
+    const getSaveMovie = JSON.parse(localStorage.getItem('savedMovies'));
+    if (getSaveMovie) {
+      setMovie(getSaveMovie);
+    }
+    if (saveMessage) {
+      // Set timeout untuk menghilangkan pesan setelah 5 detik
+      const timeoutId = setTimeout(() => {
+        setSaveMessage('');
+      }, 3000);
+    }
+  }, []);
+
   const handleOpenModal = () => {
     setModalOpen(true);
   };
@@ -50,12 +126,21 @@ function App() {
   };
 
   const search = async (q) => {
-    const URL = `https://api.themoviedb.org/3/search/movie?query=${q}&api_key=27bd4dad0754c77391111e35f827bd6a`;
-    const response = await fetch(URL);
-    const data = await response.json();
+    const storedSavedMovies = JSON.parse(localStorage.getItem('savedMovies')) || [];
+    const foundMovie = storedSavedMovies.find(movie => movie.id.toString() === q);
 
-    if (data.results) {
-      setMovie(data.results);
+    if (foundMovie) {
+      // Jika film yang dicari ada di film yang disimpan
+      setMovie([foundMovie]); // Hanya set film yang ditemukan
+    } else {
+      // Jika film yang dicari tidak ada di film yang disimpan, lakukan pencarian baru
+      const URL = `https://api.themoviedb.org/3/search/movie?query=${q}&api_key=27bd4dad0754c77391111e35f827bd6a`;
+      const response = await fetch(URL);
+      const data = await response.json();
+
+      if (data.results) {
+        setMovie(data.results);
+      }
     }
   };
 
@@ -103,46 +188,15 @@ function App() {
   }
 
   const refreshPage = async () => {
+    localStorage.setItem('movieRatings', JSON.stringify(movieRatings));
     window.location = document.referrer;
-  }
+  };
+
   return (
     <>
-      <form
-        action=""
-        className="search-bar"
-        style={{ display: showForm ? '' : 'none' }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          const searchValue = e.target.querySelector('.MovieSearch').value;
-          search(searchValue);
-        }}
-      >
-        <input
-          placeholder='Enter Film..'
-          className='MovieSearch'
-        />
-        <button className="search-btn" type="submit">
-          <span>Search</span>
-        </button>
-        <div className='container-category'>
-          <input className="dark-light" type="checkbox" id="dark-light" name="dark-light" />
-
-          <div className="light-back"></div>
-
-          <div className="sec-center">
-            <input className="dropdown" type="checkbox" id="dropdown" name="dropdown" />
-            <label className="for-dropdown" htmlFor="dropdown">Filter By<i className="uil uil-arrow-down"></i></label>
-            <div className="section-dropdown">
-              <a>Rating Tertinggi<i className="uil uil-arrow-right"></i></a>
-              <a>Popular<i className="uil uil-arrow-right"></i></a>
-              <a>Upcoming<i className="uil uil-arrow-right"></i></a>
-            </div>
-          </div>
-        </div>
-      </form>
-
       <>
         {selectedMovie !== null ? (
+
           <div className="detail-container">
             <div className="card-container">
               <a href="/" className="hero-image-container">
@@ -154,9 +208,22 @@ function App() {
                 <p>Release Date : {selectedMovie.release_date}</p>
                 <p>Duration: {(selectedMovie.runtime - (selectedMovie.runtime % 60)) / 60} Jam {selectedMovie.runtime % 60} Menit</p>
                 <p>Status: {selectedMovie.status}</p>
-                <p>Rating: {selectedMovie.vote_average}</p>
+                <div className="container">
+                  <div className="container__items">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((index) => (
+                      <div
+                        key={index}
+                        className={`star-stroke ${movieRatings[selectedMovie.id]?.includes(index) ? 'selected' : ''}`}
+                        onClick={() => handleStarClick(index)}
+                      >
+                        <div className="star-fill">&#9733;</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 <button className='button-5' onClick={refreshPage}>Kembali</button>
-
+                <button className='button-4' onClick={handleAddToSaved}>Tambah</button>
+                {saveMessage && <p>{saveMessage}</p>}
                 {comments.length > 0 && (
                   <button className="open-modal-button modal-button" onClick={handleOpenModal}>
                     Lihat Komentar
@@ -204,53 +271,69 @@ function App() {
                 </div>
               )}
             </Modal>
-
-            {/* <h2>{selectedMovie.title}</h2>
-            <p>{selectedMovie.overview}</p> */}
-            {/* Tampilkan data film lainnya sesuai kebutuhan */}
           </div>
         ) : (
+          <>
+            <Searching showForm={showForm} search={search} />
 
-          <div className="card-container">
-            {/* Tampilkan daftar gambar */}
-            {movie.map((val, index) => (
-              <div className="card" key={index}>
-                <div className="wrapper" onClick={() => detail(val.id)}>
-                  <img src={`https://image.tmdb.org/t/p/w500/${val.poster_path}`} className="cover-image" alt={val.title} />
+            {!isFavoriteMode && (
+              <>
+                <Filter setMovie={setMovie} />
+                <button className="submit-button my-favorite" onClick={handleMyFavoriteClick}>
+                  My Favorite
+                </button>
+              </>
+            )}
+            {isFavoriteMode && (
+              <button className="submit-button show-all" onClick={refreshPage}>
+                Tampilkan Semua
+              </button>
+            )}
+
+            <div className="card-container">
+              {/* Tampilkan daftar gambar */}
+              {movie.map((val, index) => (
+                <div className="card" key={index}>
+                  <div className="wrapper" onClick={() => detail(val.id)}>
+                    <img src={`https://image.tmdb.org/t/p/w500/${val.poster_path}`} className="cover-image" alt={val.title} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
 
-            <div className='paginate-container' >
-              <div className='paginate'>
-                {showPrevious ? (
+              {!isFavoriteMode && (
 
-                  <ReactPaginate
-                    previousLabel={showPrevious ? 'Previous' : ''}
-                    nextLabel={showNext ? 'Next' : ''}
-                    pageCount={6}
-                    marginPagesDisplayed={4}
-                    pageRangeDisplayed={3}
-                    onPageChange={handlePage}
-                    containerClassName={'paginate-container'}
-                    pageClassName={'page-item'}
-                    pageLinkClassName={'page-link'}
-                  />
-                ) : (
-                  <ReactPaginate
-                    nextLabel={showNext ? 'Next' : ''}
-                    pageCount={6}
-                    marginPagesDisplayed={4}
-                    pageRangeDisplayed={3}
-                    onPageChange={handlePage}
-                    containerClassName={'paginate-container'}
-                    pageClassName={'page-item'}
-                    pageLinkClassName={'page-link'}
-                  />
-                )}
-              </div>
+                <div className='paginate-container' >
+                  <div className='paginate'>
+                    {showPrevious ? (
+
+                      <ReactPaginate
+                        previousLabel={showPrevious ? 'Previous' : ''}
+                        nextLabel={showNext ? 'Next' : ''}
+                        pageCount={6}
+                        marginPagesDisplayed={4}
+                        pageRangeDisplayed={3}
+                        onPageChange={handlePage}
+                        containerClassName={'paginate-container'}
+                        pageClassName={'page-item'}
+                        pageLinkClassName={'page-link'}
+                      />
+                    ) : (
+                      <ReactPaginate
+                        nextLabel={showNext ? 'Next' : ''}
+                        pageCount={6}
+                        marginPagesDisplayed={4}
+                        pageRangeDisplayed={3}
+                        onPageChange={handlePage}
+                        containerClassName={'paginate-container'}
+                        pageClassName={'page-item'}
+                        pageLinkClassName={'page-link'}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          </>
         )}
 
       </>

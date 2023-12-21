@@ -7,6 +7,25 @@ body, .search-bar {
 body {
 	background: #f1f1f1;
 }
+.container__items {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.star-stroke {
+  cursor: pointer;
+}
+
+.star-fill {
+  display: block;
+  color: white; /* Warna default, dapat diubah sesuai keinginan */
+}
+
+.star-stroke.selected .star-fill {
+  display: block;
+  color: yellow; /* Warna saat dipilih */
+}
 ul {
   list-style-type: none; /* Remove bullets */
   padding: 0; /* Remove padding */
@@ -79,6 +98,7 @@ li {
 }
 .container-category {
   position: absolute;
+  margin-top: -75px;
   float: left;
   left: 6%;
   z-index: 200;
@@ -238,6 +258,52 @@ li {
 }
 
 
+.button-4 {
+  align-items: center;
+  background-clip: padding-box;
+  background-color: #60a83d;
+  border: 1px solid transparent;
+  border-radius: .25rem;
+  box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px 0;
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-family: system-ui,-apple-system,system-ui,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  justify-content: center;
+  line-height: 1.25;
+  margin: 0;
+  margin-left: 5px;
+  min-height: 1rem;
+  padding: calc(.875rem - 1px) calc(1.5rem - 1px);
+  position: relative;
+  text-decoration: none;
+  transition: all 250ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  vertical-align: baseline;
+  width: auto;
+}
+
+.button-4:hover,
+.button-4:focus {
+  background-color: #78d34b;
+  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+}
+
+.button-4:hover {
+  transform: translateY(-1px);
+}
+
+.button-4:active {
+  background-color: #60a83d;
+  box-shadow: rgba(0, 0, 0, .06) 0 2px 4px;
+  transform: translateY(0);
+}
+
 .button-5 {
   align-items: center;
   background-clip: padding-box;
@@ -282,6 +348,7 @@ li {
   box-shadow: rgba(0, 0, 0, .06) 0 2px 4px;
   transform: translateY(0);
 }
+
 .main-content p {
   word-wrap: break-word;
   white-space: normal;
@@ -787,4 +854,13 @@ img {
   touch-action: manipulation;
   vertical-align: baseline;
   width: auto;
+}
+
+.my-favorite, .show-all {
+  position: fixed;
+  top: 30px;
+  right: 0;
+  margin-right: 80px;
+  width: 130px;
+  height: 40px;
 }
